@@ -1,0 +1,9 @@
+.venv/
+.env
+scraper/
+minio_data/
+.tmp_dagster_home_prgv74qk/
+*.pyc
+__pycache__/
+
+amazon_scraper.log

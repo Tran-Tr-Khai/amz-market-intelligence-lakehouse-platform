@@ -1,0 +1,580 @@
+{
+  "metadata": {
+    "type": "product_details",
+    "marketplace": "US",
+    "total_products": 1,
+    "extracted_at": "2026-03-04T11:21:36.898408"
+  },
+  "products": [
+    {
+      "asin": "B0FJFHC44M",
+      "title": "RUMIA Women's Crew Neck Sweatshirt Loose Pullover Long Sleeve Shirts Soft Tops for Women Fall Clothes 2025",
+      "brand": "Brand: RUMIA",
+      "category": "Clothing, Shoes & Jewelry > Women > Clothing > Fashion Hoodies & Sweatshirts > Fashion Sweatshirts",
+      "description": "Product Details:\\nFabric type: 90% Polyester, 10% Spandex\\nCare instructions: Machine Wash\\nOrigin: Imported\\nClosure type: Pull On\\n",
+      "best_seller_rank": [
+        "#364 in Clothing, Shoes & Jewelry",
+        "#1 inWomen's Fashion Sweatshirts"
+      ],
+      "dimensions": "12.68 x 10.91 x 3.31 inches",
+      "weight": "14.25 ounces",
+      "date_first_available": "August 28, 2025",
+      "parent_asin": "B0FMK3758M",
+      "variation_count": 118,
+      "available_dimensions": {
+        "size_name": [
+          "Small",
+          "Medium",
+          "Large",
+          "X-Large",
+          "XX-Large",
+          "3X-Large"
+        ],
+        "color_name": [
+          "Beige Plaid",
+          "Black",
+          "Blue",
+          "Brown Plaid",
+          "Coffee",
+          "Dusty Blue",
+          "Gray Plaid",
+          "Green",
+          "Green Plaid",
+          "Green Tiedyeplaid",
+          "Navy",
+          "Orange",
+          "Orange Plaid",
+          "Yellow Plaid",
+          "Pink",
+          "Pink Plaid",
+          "Red",
+          "Red Plaid",
+          "Red Tiedyeplaid",
+          "Fuchsia",
+          "Dusty Purple",
+          "Redblue Plaid"
+        ]
+      },
+      "variations": [
+        {
+          "asin": "B0FJFHLF2R",
+          "combination_key": "14_3"
+        },
+        {
+          "asin": "B0FJFKGCZL",
+          "combination_key": "14_2"
+        },
+        {
+          "asin": "B0FJFGM722",
+          "combination_key": "10_5"
+        },
+        {
+          "asin": "B0FJFMN1WC",
+          "combination_key": "14_1"
+        },
+        {
+          "asin": "B0FJFHSJ5Z",
+          "combination_key": "10_4"
+        },
+        {
+          "asin": "B0FJFKK74V",
+          "combination_key": "14_0"
+        },
+        {
+          "asin": "B0FJFHQKQZ",
+          "combination_key": "10_3"
+        },
+        {
+          "asin": "B0FJFGLS61",
+          "combination_key": "10_2"
+        },
+        {
+          "asin": "B0FJFHQFQL",
+          "combination_key": "10_1"
+        },
+        {
+          "asin": "B0FJFHXFDF",
+          "combination_key": "10_0"
+        },
+        {
+          "asin": "B0FX9N1YWJ",
+          "combination_key": "18_4"
+        },
+        {
+          "asin": "B0FX9KCYWZ",
+          "combination_key": "18_3"
+        },
+        {
+          "asin": "B0FX9JXQQR",
+          "combination_key": "18_2"
+        },
+        {
+          "asin": "B0FX9JL68J",
+          "combination_key": "18_1"
+        },
+        {
+          "asin": "B0FJFHL4L5",
+          "combination_key": "14_4"
+        },
+        {
+          "asin": "B0FX9MVHS4",
+          "combination_key": "18_0"
+        },
+        {
+          "asin": "B0FJFJX5D5",
+          "combination_key": "3_0"
+        },
+        {
+          "asin": "B0FJFH8VY5",
+          "combination_key": "3_1"
+        },
+        {
+          "asin": "B0FJFGBPCM",
+          "combination_key": "3_2"
+        },
+        {
+          "asin": "B0FSCFDCY9",
+          "combination_key": "21_1"
+        },
+        {
+          "asin": "B0FJFHVWVH",
+          "combination_key": "3_3"
+        },
+        {
+          "asin": "B0FSC3HYSF",
+          "combination_key": "21_0"
+        },
+        {
+          "asin": "B0FJFHDLYK",
+          "combination_key": "3_4"
+        },
+        {
+          "asin": "B0FJFGLN3Y",
+          "combination_key": "7_0"
+        },
+        {
+          "asin": "B0FJFHL4L3",
+          "combination_key": "3_5"
+        },
+        {
+          "asin": "B0FJFMN1WB",
+          "combination_key": "7_1"
+        },
+        {
+          "asin": "B0FJFGVGX3",
+          "combination_key": "7_2"
+        },
+        {
+          "asin": "B0FJFFQGJQ",
+          "combination_key": "7_3"
+        },
+        {
+          "asin": "B0FJFGMGVN",
+          "combination_key": "7_4"
+        },
+        {
+          "asin": "B0FJFGDP87",
+          "combination_key": "7_5"
+        },
+        {
+          "asin": "B0FX9JPPW5",
+          "combination_key": "13_4"
+        },
+        {
+          "asin": "B0FJFGRMSD",
+          "combination_key": "17_0"
+        },
+        {
+          "asin": "B0FX9NN24X",
+          "combination_key": "13_3"
+        },
+        {
+          "asin": "B0FX9KCNS6",
+          "combination_key": "13_2"
+        },
+        {
+          "asin": "B0FX9JV4VP",
+          "combination_key": "13_1"
+        },
+        {
+          "asin": "B0FX9LZTZK",
+          "combination_key": "13_0"
+        },
+        {
+          "asin": "B0FJFMN1WF",
+          "combination_key": "17_4"
+        },
+        {
+          "asin": "B0FJFHXKP3",
+          "combination_key": "17_3"
+        },
+        {
+          "asin": "B0FJF942WX",
+          "combination_key": "17_2"
+        },
+        {
+          "asin": "B0FX9MLBX8",
+          "combination_key": "13_5"
+        },
+        {
+          "asin": "B0FJFJ9VS2",
+          "combination_key": "17_1"
+        },
+        {
+          "asin": "B0FJFGG7PC",
+          "combination_key": "2_0"
+        },
+        {
+          "asin": "B0FJFGGDN6",
+          "combination_key": "20_5"
+        },
+        {
+          "asin": "B0FJFGXDHS",
+          "combination_key": "2_1"
+        },
+        {
+          "asin": "B0FJFHC44M",
+          "combination_key": "2_2"
+        },
+        {
+          "asin": "B0FJFK9SPP",
+          "combination_key": "2_3"
+        },
+        {
+          "asin": "B0FJFGGDN8",
+          "combination_key": "2_4"
+        },
+        {
+          "asin": "B0FJFFS7C4",
+          "combination_key": "6_0"
+        },
+        {
+          "asin": "B0FJFHYYJH",
+          "combination_key": "20_1"
+        },
+        {
+          "asin": "B0FJFH6VNX",
+          "combination_key": "2_5"
+        },
+        {
+          "asin": "B0FJFGHF1H",
+          "combination_key": "6_1"
+        },
+        {
+          "asin": "B0FJFFRVJT",
+          "combination_key": "6_2"
+        },
+        {
+          "asin": "B0FJFLRP9J",
+          "combination_key": "6_3"
+        },
+        {
+          "asin": "B0FJFKMF2M",
+          "combination_key": "6_4"
+        },
+        {
+          "asin": "B0FJFGM9LL",
+          "combination_key": "6_5"
+        },
+        {
+          "asin": "B0FJFH2RBN",
+          "combination_key": "20_0"
+        },
+        {
+          "asin": "B0FJFGJXKB",
+          "combination_key": "12_5"
+        },
+        {
+          "asin": "B0FJFHMCR2",
+          "combination_key": "16_1"
+        },
+        {
+          "asin": "B0FJFJJHMM",
+          "combination_key": "12_4"
+        },
+        {
+          "asin": "B0FJFBQZPX",
+          "combination_key": "16_0"
+        },
+        {
+          "asin": "B0FJFK1W8X",
+          "combination_key": "12_3"
+        },
+        {
+          "asin": "B0FJFJ8K37",
+          "combination_key": "12_2"
+        },
+        {
+          "asin": "B0FJFFNLCS",
+          "combination_key": "12_1"
+        },
+        {
+          "asin": "B0FJFHVT8X",
+          "combination_key": "12_0"
+        },
+        {
+          "asin": "B0FJFGZ6PG",
+          "combination_key": "16_4"
+        },
+        {
+          "asin": "B0FJFGVGX7",
+          "combination_key": "16_3"
+        },
+        {
+          "asin": "B0FJFHVQLK",
+          "combination_key": "16_2"
+        },
+        {
+          "asin": "B0FJFHQFQJ",
+          "combination_key": "1_0"
+        },
+        {
+          "asin": "B0FJFHQ14G",
+          "combination_key": "1_1"
+        },
+        {
+          "asin": "B0FJFGG68G",
+          "combination_key": "1_2"
+        },
+        {
+          "asin": "B0FJFH7X9X",
+          "combination_key": "1_3"
+        },
+        {
+          "asin": "B0FJFFQTRZ",
+          "combination_key": "1_4"
+        },
+        {
+          "asin": "B0FSCFDCY8",
+          "combination_key": "5_0"
+        },
+        {
+          "asin": "B0FJFLKQYN",
+          "combination_key": "1_5"
+        },
+        {
+          "asin": "B0FSCK2K17",
+          "combination_key": "5_1"
+        },
+        {
+          "asin": "B0FSCKHDMV",
+          "combination_key": "5_2"
+        },
+        {
+          "asin": "B0FSC3DKJN",
+          "combination_key": "5_3"
+        },
+        {
+          "asin": "B0FSCZB3NF",
+          "combination_key": "5_4"
+        },
+        {
+          "asin": "B0FX9LMSCQ",
+          "combination_key": "9_0"
+        },
+        {
+          "asin": "B0FSCFZSFS",
+          "combination_key": "5_5"
+        },
+        {
+          "asin": "B0FX9QWRSL",
+          "combination_key": "9_1"
+        },
+        {
+          "asin": "B0FX9NB8KH",
+          "combination_key": "9_2"
+        },
+        {
+          "asin": "B0FX9H65RC",
+          "combination_key": "9_3"
+        },
+        {
+          "asin": "B0FX9LXR2J",
+          "combination_key": "9_4"
+        },
+        {
+          "asin": "B0FX9KDNQH",
+          "combination_key": "9_5"
+        },
+        {
+          "asin": "B0FX9MTRKH",
+          "combination_key": "15_2"
+        },
+        {
+          "asin": "B0FJFHW88C",
+          "combination_key": "11_5"
+        },
+        {
+          "asin": "B0FX9HKZCH",
+          "combination_key": "15_1"
+        },
+        {
+          "asin": "B0FJFHDBF4",
+          "combination_key": "11_4"
+        },
+        {
+          "asin": "B0FX9K43FS",
+          "combination_key": "15_0"
+        },
+        {
+          "asin": "B0FJFGTTFM",
+          "combination_key": "11_3"
+        },
+        {
+          "asin": "B0FJFJJHMN",
+          "combination_key": "11_2"
+        },
+        {
+          "asin": "B0FJFJ6P6X",
+          "combination_key": "11_1"
+        },
+        {
+          "asin": "B0FJFJJ3H3",
+          "combination_key": "11_0"
+        },
+        {
+          "asin": "B0FJFH4PJR",
+          "combination_key": "19_3"
+        },
+        {
+          "asin": "B0FJFDPHQD",
+          "combination_key": "19_2"
+        },
+        {
+          "asin": "B0FJFHQF2F",
+          "combination_key": "19_1"
+        },
+        {
+          "asin": "B0FX9H1612",
+          "combination_key": "15_4"
+        },
+        {
+          "asin": "B0FJFJWP9Z",
+          "combination_key": "19_0"
+        },
+        {
+          "asin": "B0FX9R54LN",
+          "combination_key": "15_3"
+        },
+        {
+          "asin": "B0FJFGRSDK",
+          "combination_key": "0_0"
+        },
+        {
+          "asin": "B0FJFHMSL7",
+          "combination_key": "0_1"
+        },
+        {
+          "asin": "B0FJFF32ZF",
+          "combination_key": "0_2"
+        },
+        {
+          "asin": "B0FJFFJ7RZ",
+          "combination_key": "0_3"
+        },
+        {
+          "asin": "B0FJFH4M63",
+          "combination_key": "0_4"
+        },
+        {
+          "asin": "B0FJFFR2VS",
+          "combination_key": "4_0"
+        },
+        {
+          "asin": "B0FJFGKHKP",
+          "combination_key": "0_5"
+        },
+        {
+          "asin": "B0FJFHTKWB",
+          "combination_key": "4_1"
+        },
+        {
+          "asin": "B0FJFH3ZN7",
+          "combination_key": "4_2"
+        },
+        {
+          "asin": "B0FJFGF5LH",
+          "combination_key": "4_3"
+        },
+        {
+          "asin": "B0FJFJDTP1",
+          "combination_key": "4_4"
+        },
+        {
+          "asin": "B0FJFGZZN9",
+          "combination_key": "8_0"
+        },
+        {
+          "asin": "B0FJFFW46F",
+          "combination_key": "4_5"
+        },
+        {
+          "asin": "B0FJFGG68H",
+          "combination_key": "8_1"
+        },
+        {
+          "asin": "B0FJFFQF8Y",
+          "combination_key": "8_2"
+        },
+        {
+          "asin": "B0FJFFTLVR",
+          "combination_key": "8_3"
+        },
+        {
+          "asin": "B0FJFBFMZH",
+          "combination_key": "8_4"
+        },
+        {
+          "asin": "B0FJFHHDGH",
+          "combination_key": "8_5"
+        }
+      ],
+      "images": [
+        "https://m.media-amazon.com/images/I/414K5PmiftL._AC_SL1500_.jpg",
+        "https://m.media-amazon.com/images/I/41T8vt8QTcL._AC_SL1500_.jpg",
+        "https://m.media-amazon.com/images/I/41vfRGxV8kL._AC_SL1500_.jpg",
+        "https://m.media-amazon.com/images/I/41XkJH309SL._AC_SL1500_.jpg",
+        "https://m.media-amazon.com/images/I/31KeSD6Ut8L._AC_SL1500_.jpg",
+        "https://m.media-amazon.com/images/I/A1RKtHKQ44L.SX38_SY50_CR,0,0,38,50_PKmb-play-button-overlay-thumb_.png",
+        "https://m.media-amazon.com/images/I/A1pBw2MMTbL.SX38_SY50_CR,0,0,38,50_PKmb-play-button-overlay-thumb_.png"
+      ],
+      "rating_overview": {
+        "5": 76,
+        "4": 13,
+        "3": 6,
+        "2": 2,
+        "1": 3
+      },
+      "stock_status": "In Stock",
+      "buybox_seller": "RUMIA FASHION",
+      "is_fba": true,
+      "categories": [
+        {
+          "name": "Clothing, Shoes & Jewelry",
+          "url": "/amazon-fashion/b/ref=dp_bc_1?ie=UTF8&node=7141123011",
+          "level": 1
+        },
+        {
+          "name": "Women",
+          "url": "/Womens-Fashion/b/ref=dp_bc_2?ie=UTF8&node=7147440011",
+          "level": 2
+        },
+        {
+          "name": "Clothing",
+          "url": "/Womens-Clothing/b/ref=dp_bc_3?ie=UTF8&node=1040660",
+          "level": 3
+        },
+        {
+          "name": "Fashion Hoodies & Sweatshirts",
+          "url": "/Womens-Hoodies-and-Sweatshirts/b/ref=dp_bc_4?ie=UTF8&node=1258603011",
+          "level": 4
+        },
+        {
+          "name": "Fashion Sweatshirts",
+          "url": "/Womens-Fashion-Sweatshirts/b/ref=dp_bc_5?ie=UTF8&node=5545636011",
+          "level": 5
+        }
+      ]
+    }
+  ]
+}
