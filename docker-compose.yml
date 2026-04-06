@@ -23,6 +23,58 @@ services:
       - lakehouse-tntkhai
     restart: unless-stopped
 
+  # ---------------------------------------------------------------------------
+  # Spark Standalone Cluster
+  #
+  # Dev note: Dagster currently runs LOCAL (outside Docker). The SparkResource
+  # uses master("local[*]") by default so the driver is in-process with Dagster
+  # and reaches MinIO at http://localhost:9000.
+  #
+  # When Dagster is containerized, switch SPARK_MASTER_URL to
+  # "spark://spark-master:7077" and set MINIO_ENDPOINT to "minio:9000".
+  # ---------------------------------------------------------------------------
+  spark-master:
+    image: apache/spark:3.5.1-python3
+    container_name: spark-master
+    environment:
+      SPARK_MODE: master
+      SPARK_RPC_AUTHENTICATION_ENABLED: "no"
+      SPARK_RPC_ENCRYPTION_ENABLED: "no"
+      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "no"
+      SPARK_SSL_ENABLED: "no"
+    ports:
+      - "7077:7077"   # Spark cluster port
+      - "8080:8080"   # Spark Master Web UI
+    volumes:
+      - ./spark/jars:/opt/bitnami/spark/jars/extra
+      - ./spark/conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+    networks:
+      - lakehouse-tntkhai
+    restart: unless-stopped
+
+  spark-worker:
+    image: apache/spark:3.5.1-python3
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    environment:
+      SPARK_MODE: worker
+      SPARK_MASTER_URL: spark://spark-master:7077
+      SPARK_WORKER_MEMORY: 2G
+      SPARK_WORKER_CORES: "2"
+      SPARK_RPC_AUTHENTICATION_ENABLED: "no"
+      SPARK_RPC_ENCRYPTION_ENABLED: "no"
+      SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "no"
+      SPARK_SSL_ENABLED: "no"
+    ports:
+      - "8081:8081"   # Spark Worker Web UI
+    volumes:
+      - ./spark/jars:/opt/bitnami/spark/jars/extra
+      - ./spark/conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+    networks:
+      - lakehouse-tntkhai
+    restart: unless-stopped
+
 networks:
   lakehouse-tntkhai:
     driver: bridge

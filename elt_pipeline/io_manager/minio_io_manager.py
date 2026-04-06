@@ -42,6 +42,7 @@ class MinioIOManager(dg.ConfigurableIOManager):
             "AWS_ENDPOINT_URL": f"{protocol}://{self.minio.endpoint}",
             "AWS_ACCESS_KEY_ID": self.minio.access_key,
             "AWS_SECRET_ACCESS_KEY": self.minio.secret_key,
+            "AWS_SESSION_TOKEN": "",
             "AWS_REGION": "us-east-1",
             "AWS_S3_ALLOW_UNSAFE_RENAME": "true",
         }
