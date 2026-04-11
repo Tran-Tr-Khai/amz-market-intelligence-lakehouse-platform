@@ -2,6 +2,8 @@
 
 > **Scope:** This document covers the complete gold layer: one SCD2 dimension table, three daily fact tables, and two analytical mart tables, all sourced from `silver/amazon/search_results` and `silver/amazon/product_details`.
 
+> **Last revised:** Design decisions section added; `fact_price_history` renamed to `fact_price_snapshot` with non-price columns removed.
+
 ---
 
 ## Table of Contents
@@ -11,14 +13,15 @@
 3. [Update Strategy Summary](#3-update-strategy-summary)
 4. [dim\_product (SCD Type 2)](#4-dim_product-scd-type-2)
 5. [fact\_search\_ranking](#5-fact_search_ranking)
-6. [fact\_price\_history](#6-fact_price_history)
+6. [fact\_price\_snapshot](#6-fact_price_snapshot)
 7. [fact\_product\_performance](#7-fact_product_performance)
 8. [mart\_keyword\_daily](#8-mart_keyword_daily)
 9. [mart\_brand\_competitive](#9-mart_brand_competitive)
-10. [Lineage & Dependency Graph](#10-lineage--dependency-graph)
-11. [Surrogate Key Strategy](#11-surrogate-key-strategy)
-12. [Folder Structure](#12-folder-structure)
-13. [Verification Checklist](#13-verification-checklist)
+10. [Design Decisions](#10-design-decisions)
+11. [Lineage & Dependency Graph](#11-lineage--dependency-graph)
+12. [Surrogate Key Strategy](#12-surrogate-key-strategy)
+13. [Folder Structure](#13-folder-structure)
+14. [Verification Checklist](#14-verification-checklist)
 
 ---
 
@@ -41,7 +44,7 @@
 │  FACT  (daily partitions, replaceWhere)                         │
 │  ┌─────────────────────────────────────────────────────────┐   │
 │  │  fact_search_ranking      (asin × keyword × day)        │   │
-│  │  fact_price_history       (asin × day)                  │   │
+  │  fact_price_snapshot      (asin × day)                  │   │
 │  │  fact_product_performance (asin × day)                  │   │
 │  └─────────────────────────────────────────────────────────┘   │
 │                                                                 │
@@ -69,7 +72,7 @@
 |---|---|---|---|---|
 | `dim_product` | Dimension (SCD2) | 1 row per (asin, marketplace) version | `product_details` | Delta MERGE |
 | `fact_search_ranking` | Fact | (asin, keyword, marketplace, ingested_at) | `search_results` | replaceWhere |
-| `fact_price_history` | Fact | (asin, marketplace, ingested_at) | `search_results` | replaceWhere |
+| `fact_price_snapshot` | Fact | (asin, marketplace, ingested_at) | `search_results` | replaceWhere |
 | `fact_product_performance` | Fact | (asin, marketplace, ingested_at) | `product_details` | replaceWhere |
 | `mart_keyword_daily` | Mart | (keyword, marketplace, ingested_at) | `fact_search_ranking` + `dim_product` | replaceWhere |
 | `mart_brand_competitive` | Mart | (brand, category_leaf, marketplace, ingested_at) | `fact_product_performance` + `dim_product` | replaceWhere |
@@ -91,7 +94,7 @@ All gold tables reside under `s3a://lakehouse/gold/amazon/<table_name>/`.
 silver/amazon/product_details
   └─► dim_product             (MERGE)
         └─► fact_search_ranking      (replaceWhere)
-        └─► fact_price_history       (replaceWhere)
+        └─► fact_price_snapshot      (replaceWhere)
         └─► fact_product_performance (replaceWhere)
               └─► mart_keyword_daily     (replaceWhere)
               └─► mart_brand_competitive (replaceWhere)
@@ -241,6 +244,8 @@ except Exception:
 **Source:** `silver/amazon/search_results` + `dim_product` (for `product_sk` lookup)  
 **Grain:** One row per `(asin, keyword, marketplace, ingested_at)` — matches the silver dedup grain exactly.
 
+> **Design note — why price and rating are kept here:** An Amazon search result card displays price, rating, and badges _together as a single event_. These fields reflect what a shopper sees for a specific keyword search, which can vary across keywords (e.g. Amazon can show different prices or suppress badges on different result pages). Keeping them in this grain preserves the per-keyword pricing signal for analysis. `fact_price_snapshot` (Section 6) then aggregates across keywords to produce the canonical daily price per product.
+
 ### 5.1 Schema
 
 | Column | Type | Nullable | Notes |
@@ -305,12 +310,14 @@ fact.write.format("delta")\
 
 ---
 
-## 6. fact\_price\_history
+## 6. fact\_price\_snapshot
 
-**Path:** `s3a://lakehouse/gold/amazon/fact_price_history/`  
+**Path:** `s3a://lakehouse/gold/amazon/fact_price_snapshot/`  
 **Format:** Delta Lake, partitioned by `ingested_at`  
 **Source:** `silver/amazon/search_results` (aggregated across all keyword appearances per ASIN per day)  
 **Grain:** One row per `(asin, marketplace, ingested_at)` — single canonical daily price snapshot per product.
+
+> **Why a separate table from `fact_search_ranking`:** `fact_search_ranking` records price/rating _per keyword hit_ (granular, keyword-scoped). This table collapses those rows into one authoritative daily price record per product, resolving cross-keyword price jitter and enabling efficient time-series queries without scanning the larger search ranking table.
 
 ### 6.1 Aggregation Rationale
 
@@ -321,9 +328,11 @@ A single ASIN may appear in multiple keyword searches on the same day with the s
 | `MIN` | `price_amount` → `min_price` | Shows the best available offer |
 | `MAX` | `price_amount` → `max_price` | Detects price variation across keywords |
 | `AVG` | `price_amount` → `avg_price` | Smoothed signal for trend analysis |
-| Latest by `source_extracted_at` | `price_amount`, `original_price_amount`, `discount_pct`, `monthly_sales_min`, `ratings_count`, `coupon_*` | Most up-to-date single snapshot |
+| Latest by `source_extracted_at` | `price_amount`, `original_price_amount`, `discount_pct`, `coupon_discount_pct` | Most up-to-date single price snapshot |
 | `BOOL_OR` | `has_coupon` | True if any keyword appearance had an active coupon |
 | `COUNT DISTINCT` | `keyword` → `keyword_appearance_count` | How many keywords this ASIN ranked for today |
+
+> **Columns removed vs. previous `fact_price_history`:** `monthly_sales_min`, `ratings_count_latest`, and `rating_value_latest` have been removed. Monthly sales and ratings are not price metrics; they belong in `fact_search_ranking` (per keyword, raw) and `fact_product_performance` (per ASIN, from the product-detail page). Keeping them in a price table created misleading overlap and made both tables harder to maintain.
 
 ### 6.2 Schema
 
@@ -336,15 +345,12 @@ A single ASIN may appear in multiple keyword searches on the same day with the s
 | `min_price` | DOUBLE | YES | Minimum price seen across all keyword appearances |
 | `max_price` | DOUBLE | YES | Maximum price seen |
 | `avg_price` | DOUBLE | YES | Average price across appearances, rounded 2 dp |
-| `latest_price` | DOUBLE | YES | Price from the latest scrape (by `source_extracted_at`) |
-| `original_price_latest` | DOUBLE | YES | Original/was-price from the latest scrape |
-| `discount_pct_latest` | DOUBLE | YES | Discount % from the latest scrape |
-| `monthly_sales_min` | LONG | YES | Monthly sales lower bound (any keyword appearance) |
-| `ratings_count_latest` | LONG | YES | Review count from the latest scrape |
-| `rating_value_latest` | DOUBLE | YES | Rating value from the latest scrape |
+| `latest_price` | DOUBLE | YES | Price from the most recent scrape (by `source_extracted_at`) |
+| `original_price_latest` | DOUBLE | YES | Original/was-price from the most recent scrape |
+| `discount_pct_latest` | DOUBLE | YES | Discount % from the most recent scrape |
 | `has_coupon` | BOOLEAN | NO | True if any keyword appearance had a coupon |
-| `coupon_discount_pct_latest` | DOUBLE | YES | Coupon discount % from the latest scrape |
-| `keyword_appearance_count` | INTEGER | NO | Number of distinct keywords this ASIN ranked for |
+| `coupon_discount_pct_latest` | DOUBLE | YES | Coupon discount % from the most recent scrape |
+| `keyword_appearance_count` | INTEGER | NO | Number of distinct keywords this ASIN ranked for today |
 | `gold_processed_at` | TIMESTAMP | NO | |
 
 ### 6.3 Transformation
@@ -355,7 +361,7 @@ from pyspark.sql.window import Window
 silver_sr = session.read.format("delta").load(SILVER_SEARCH_PATH)\
                    .filter(F.col("ingested_at") == partition_date)
 
-# --- Latest snapshot per ASIN across keywords ---
+# --- Latest price snapshot per ASIN (price/coupon only) ---
 latest_window = Window.partitionBy("asin", "marketplace", "ingested_at")\
                       .orderBy(F.col("source_extracted_at").desc())
 
@@ -368,15 +374,11 @@ latest = (
         F.col("price_amount").alias("latest_price"),
         F.col("original_price_amount").alias("original_price_latest"),
         F.col("discount_pct").alias("discount_pct_latest"),
-        F.col("ratings_count").alias("ratings_count_latest"),
-        F.col("rating").alias("rating_value_latest"),
-        F.col("monthly_sales").alias("monthly_sales_min"),
         F.col("coupon").alias("coupon_discount_pct_latest"),
-        F.col("source_extracted_at"),
     )
 )
 
-# --- Global aggregates per ASIN ---
+# --- Global price aggregates per ASIN ---
 aggs = silver_sr.groupBy("asin", "marketplace", "ingested_at").agg(
     F.round(F.min("price_amount"), 2).alias("min_price"),
     F.round(F.max("price_amount"), 2).alias("max_price"),
@@ -582,25 +584,57 @@ mart = (
 
 ---
 
-## 10. Lineage & Dependency Graph
+## 10. Design Decisions
+
+### 10.1 Why price and rating stay in `fact_search_ranking`
+
+`data_modeling.md` (and similar clean-separation references) suggest removing price, rating, and monthly sales from the search fact, keeping only badge columns. That rule makes sense for event models where attributes come from different systems. It does **not** apply here for the following reasons:
+
+- **Amazon search cards are a single composite event.** The scraper captures one card — and that card simultaneously contains price, rating, badges, and coupons. These are not separate events from separate systems; they are co-located measures of the same impression.
+- **Per-keyword price variation is analytically real.** Amazon can display different prices or suppress certain badges on different result pages for the same ASIN. Stripping price from the search fact would permanently lose this cross-keyword signal.
+- **`fact_price_snapshot` already resolves the downstream query pattern.** Analysts who want "one price per product per day" query `fact_price_snapshot` (grain: `asin × day`). Analysts who want to see how an ASIN's price compares across keyword contexts query `fact_search_ranking` (grain: `asin × keyword × day`). Both are useful; they are not redundant.
+
+### 10.2 What was actually wrong — and what changed
+
+The reference documents correctly diagnosed one issue: **`fact_price_history` carried non-price columns (`monthly_sales_min`, `ratings_count_latest`, `rating_value_latest`)**. These belong elsewhere:
+
+| Column | Where it belongs |
+|---|---|
+| `monthly_sales_min` | `fact_search_ranking` (raw, per-keyword) |
+| `ratings_count` / `rating_value` | `fact_search_ranking` (raw) and `fact_product_performance` (from product-detail page, with full breakdown) |
+
+The fix was targeted: rename the table to `fact_price_snapshot` (reflecting that it is a daily aggregated snapshot, not a slowly-tracked history) and remove the three non-price columns. No other structural change was warranted.
+
+### 10.3 Fact-overlap rule applied correctly
+
+The correct rule for this model is:
+
+> *A fact table should own the measures of its **business event**. If two fact tables share a measure, ask whether they represent the same event or different granularities of the same source.*
+
+- `fact_search_ranking` and `fact_price_snapshot` share `price_amount` — but at **different grains** (keyword-level vs. ASIN-level) and for **different purposes** (raw impression vs. canonical daily price). This is acceptable overlap by aggregation, not design duplication.
+- `fact_price_snapshot` previously shared `rating_value` with `fact_product_performance`, at the **same grain**, from the **same conceptual domain** (product quality). That was genuine duplication and has been removed.
+
+---
+
+## 11. Lineage & Dependency Graph
 
 ```
 bronze/amazon/search_results
     └─► silver/amazon/search_results
             ├─► gold/amazon/fact_search_ranking
             │       └─► gold/amazon/mart_keyword_daily
-            └─► gold/amazon/fact_price_history
+            └─► gold/amazon/fact_price_snapshot
 
 bronze/amazon/product_details
     └─► silver/amazon/product_details
             ├─► gold/amazon/dim_product  ◄──────────────────────────────┐
             │       (provides product_sk, brand, category_leaf)          │
             │                                                             │
-            ├─► gold/amazon/fact_product_performance ────────────────────┤
+            ├─► gold/amazon/fact_product_performance ─────────────────┤
             │       └─► gold/amazon/mart_brand_competitive ◄─────────────┘
             │
             └─► (product_sk joined into fact_search_ranking,
-                 fact_price_history at write time)
+                 fact_price_snapshot at write time)
 ```
 
 **Dagster `AssetKey` dependency declarations:**
@@ -609,14 +643,14 @@ bronze/amazon/product_details
 |---|---|
 | `dim_product` | `["silver", "amazon", "product_details"]` |
 | `fact_search_ranking` | `["silver", "amazon", "search_results"]`, `["gold", "amazon", "dim_product"]` |
-| `fact_price_history` | `["silver", "amazon", "search_results"]`, `["gold", "amazon", "dim_product"]` |
+| `fact_price_snapshot` | `["silver", "amazon", "search_results"]`, `["gold", "amazon", "dim_product"]` |
 | `fact_product_performance` | `["silver", "amazon", "product_details"]`, `["gold", "amazon", "dim_product"]` |
 | `mart_keyword_daily` | `["gold", "amazon", "fact_search_ranking"]` |
 | `mart_brand_competitive` | `["gold", "amazon", "fact_product_performance"]`, `["gold", "amazon", "dim_product"]` |
 
 ---
 
-## 11. Surrogate Key Strategy
+## 12. Surrogate Key Strategy
 
 `product_sk` is a deterministic, collision-resistant string key generated as:
 
@@ -636,7 +670,7 @@ F.sha2(
 
 ---
 
-## 12. Folder Structure
+## 13. Folder Structure
 
 ```
 elt_pipeline/
@@ -650,8 +684,8 @@ elt_pipeline/
     └── gold/                                  # ← NEW
         ├── __init__.py                        # Re-exports all gold assets
         ├── dim_product.py                     # SCD2 dimension
-        ├── fact_search_ranking.py             # Daily search-result facts
-        ├── fact_price_history.py              # Daily ASIN-level price time-series
+        ├── fact_search_ranking.py             # Daily search-result facts (per keyword)
+        ├── fact_price_snapshot.py             # Daily ASIN-level price snapshot (aggregated)
         ├── fact_product_performance.py        # Daily BSR + review metrics
         ├── mart_keyword_daily.py              # Pre-aggregated keyword KPIs
         └── mart_brand_competitive.py          # Pre-aggregated brand benchmarks
@@ -662,7 +696,7 @@ elt_pipeline/
 ```python
 from .dim_product              import gold_amazon_dim_product
 from .fact_search_ranking      import gold_amazon_fact_search_ranking
-from .fact_price_history       import gold_amazon_fact_price_history
+from .fact_price_snapshot      import gold_amazon_fact_price_snapshot
 from .fact_product_performance import gold_amazon_fact_product_performance
 from .mart_keyword_daily       import gold_amazon_mart_keyword_daily
 from .mart_brand_competitive   import gold_amazon_mart_brand_competitive
@@ -670,7 +704,7 @@ from .mart_brand_competitive   import gold_amazon_mart_brand_competitive
 __all__ = [
     "gold_amazon_dim_product",
     "gold_amazon_fact_search_ranking",
-    "gold_amazon_fact_price_history",
+    "gold_amazon_fact_price_snapshot",
     "gold_amazon_fact_product_performance",
     "gold_amazon_mart_keyword_daily",
     "gold_amazon_mart_brand_competitive",
@@ -681,7 +715,7 @@ __all__ = [
 
 ---
 
-## 13. Verification Checklist
+## 14. Verification Checklist
 
 ```bash
 # 1. Ensure silver layers are already materialised
@@ -698,7 +732,7 @@ dagster asset materialize -m elt_pipeline \
 
 ## 2b. Facts (can run in parallel after dim is ready)
 dagster asset materialize -m elt_pipeline \
-  --select "gold/amazon/fact_search_ranking gold/amazon/fact_price_history gold/amazon/fact_product_performance" \
+  --select "gold/amazon/fact_search_ranking gold/amazon/fact_price_snapshot gold/amazon/fact_product_performance" \
   --partition 2026-03-04
 
 ## 2c. Marts (depend on facts above)
@@ -710,7 +744,7 @@ dagster asset materialize -m elt_pipeline \
 #    Expected paths (all contain *.parquet + _delta_log/):
 #      lakehouse/gold/amazon/dim_product/
 #      lakehouse/gold/amazon/fact_search_ranking/ingested_at=2026-03-04/
-#      lakehouse/gold/amazon/fact_price_history/ingested_at=2026-03-04/
+#      lakehouse/gold/amazon/fact_price_snapshot/ingested_at=2026-03-04/
 #      lakehouse/gold/amazon/fact_product_performance/ingested_at=2026-03-04/
 #      lakehouse/gold/amazon/mart_keyword_daily/ingested_at=2026-03-04/
 #      lakehouse/gold/amazon/mart_brand_competitive/ingested_at=2026-03-04/
