@@ -36,8 +36,8 @@ services:
   spark-master:
     image: apache/spark:3.5.1-python3
     container_name: spark-master
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "0.0.0.0"]
     environment:
-      SPARK_MODE: master
       SPARK_RPC_AUTHENTICATION_ENABLED: "no"
       SPARK_RPC_ENCRYPTION_ENABLED: "no"
       SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED: "no"
@@ -46,8 +46,8 @@ services:
       - "7077:7077"   # Spark cluster port
       - "8080:8080"   # Spark Master Web UI
     volumes:
-      - ./spark/jars:/opt/bitnami/spark/jars/extra
-      - ./spark/conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+      - ./spark/jars:/opt/spark/jars/extra
+      - ./spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
     networks:
       - lakehouse-tntkhai
     restart: unless-stopped
@@ -57,9 +57,8 @@ services:
     container_name: spark-worker
     depends_on:
       - spark-master
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
     environment:
-      SPARK_MODE: worker
-      SPARK_MASTER_URL: spark://spark-master:7077
       SPARK_WORKER_MEMORY: 2G
       SPARK_WORKER_CORES: "2"
       SPARK_RPC_AUTHENTICATION_ENABLED: "no"
@@ -69,23 +68,61 @@ services:
     ports:
       - "8081:8081"   # Spark Worker Web UI
     volumes:
-      - ./spark/jars:/opt/bitnami/spark/jars/extra
-      - ./spark/conf/spark-defaults.conf:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+      - ./spark/jars:/opt/spark/jars/extra
+      - ./spark/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf:ro
     networks:
       - lakehouse-tntkhai
     restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Superset — BI / Dashboarding layer
+  #
+  # Connects to MinIO Gold data via the DuckDB catalog file produced by
+  # scripts/setup_duckdb_catalog.py. Run that script on the host BEFORE
+  # starting this service for the first time.
+  #
+  # First-run bootstrap (DB migrations, admin user, role init) is handled
+  # automatically by superset/init.sh on container startup.
+  #
+  # Access: http://localhost:8088
+  # Default credentials: admin / admin  (override via SUPERSET_ADMIN_* env vars)
+  # ---------------------------------------------------------------------------
+  superset:
+    build:
+      context: ./superset
+      dockerfile: Dockerfile
+    container_name: superset
+    ports:
+      - "8088:8088"
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      # DuckDB catalog file — read-only; rebuilt by setup_duckdb_catalog.py
+      - ./superset_views.duckdb:/app/superset_views.duckdb:ro
+      # DuckDB home — contains persistent S3 secret; read-only in container
+      - ./duckdb_data:/app/duckdb_data:ro
+      # Superset Python config override
+      - ./superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+      # Bootstrap script
+      - ./superset/init.sh:/app/init.sh:ro
+      # Persistent Superset metadata (SQLite DB, uploaded assets)
+      - superset_home:/app/superset_home
+    environment:
+      PYTHONPATH: /app/pythonpath
+      SUPERSET_SECRET_KEY: "${SUPERSET_SECRET_KEY:-change-me-in-production}"
+      SUPERSET_ADMIN_USER: "${SUPERSET_ADMIN_USER:-admin}"
+      SUPERSET_ADMIN_EMAIL: "${SUPERSET_ADMIN_EMAIL:-admin@example.com}"
+      SUPERSET_ADMIN_PASSWORD: "${SUPERSET_ADMIN_PASSWORD:-admin}"
+    entrypoint: ["/bin/bash", "/app/init.sh"]
+    networks:
+      - lakehouse-tntkhai
+    restart: unless-stopped
+
+volumes:
+  superset_home:
 
 networks:
   lakehouse-tntkhai:
     driver: bridge
     name: lakehouse-tntkhai
-
-
-
-
-
-
-
-
-
-
