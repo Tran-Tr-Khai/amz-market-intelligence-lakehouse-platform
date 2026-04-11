@@ -5,5 +5,6 @@ minio_data/
 .tmp_dagster_home_prgv74qk/
 *.pyc
 __pycache__/
-
+spark/
 amazon_scraper.log
+.tmp_dagster_home_f221_3x4

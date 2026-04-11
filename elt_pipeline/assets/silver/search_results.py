@@ -5,7 +5,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
-from ..resources.spark_resource import SparkResource
+from ...resources.spark_resource import SparkResource
 
 BRONZE_PATH = "s3a://lakehouse/bronze/amazon/search_results"
 SILVER_PATH = "s3a://lakehouse/silver/amazon/search_results"
@@ -147,7 +147,7 @@ def _transform(bronze_df: DataFrame) -> DataFrame:
     # Dedup: one row per (asin, keyword) per day, latest snapshot wins 
     # This handles the case where the same ASIN appears in multiple source files
     # (e.g., two keyword-search pages scraped at different times on the same day).
-    dedup_window = Window.partitionBy("asin", "ingested_at").orderBy(
+    dedup_window = Window.partitionBy("asin", "keyword", "ingested_at").orderBy(
         F.col("source_extracted_at").desc()
     )
     df = (

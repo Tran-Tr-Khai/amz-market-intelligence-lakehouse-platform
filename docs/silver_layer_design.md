@@ -1,7 +1,6 @@
 # Silver Layer Design — `amazon_search_results`
 
-> **Scope:** This document covers only the silver layer for `amazon_search_results`.  
-> `amazon_product_details` silver is out of scope — see §9.
+> **Scope:** This document covers the silver layer for both `amazon_search_results` and `amazon_product_details`.
 
 ---
 
@@ -333,3 +332,175 @@ print(df.schema)
 dagster asset materialize ...  # same command as step 5
 # Row count must be equal to previous run
 ```
+
+---
+
+---
+
+# Silver Layer Design — `amazon_product_details`
+
+---
+
+## Table of Contents
+
+1. [Source Data & Bronze Schema](#1-source-data--bronze-schema)
+2. [Silver Schema](#2-silver-schema)
+3. [Transformation Logic](#3-transformation-logic)
+4. [Update Strategy](#4-update-strategy)
+5. [Folder Structure](#5-folder-structure)
+
+---
+
+## 1. Source Data & Bronze Schema
+
+**Bronze asset:** `bronze/amazon/product_details`  
+**Path:** `s3a://lakehouse/bronze/amazon/product_details`  
+**Ingested by:** `amazon_product_details` (Polars + delta-rs, partitioned by `ingested_at`)
+
+Key bronze fields (raw, as scraped):
+
+| Field | Raw type | Example |
+|---|---|---|
+| `asin` | String | `B0FJFHC44M` |
+| `parent_asin` | String | `B0FMK3758M` |
+| `title` | String | `RUMIA Women's Crew Neck Sweatshirt…` |
+| `brand` | String | `Brand: RUMIA` |
+| `category` | String | `Clothing, Shoes & Jewelry > Women > …` |
+| `categories` | Array\[Struct\] | `[{name, url, level}, …]` |
+| `best_seller_rank` | Array\[String\] | `["#364 in Clothing, Shoes & Jewelry", "#1 inWomen's Fashion Sweatshirts"]` |
+| `dimensions` | String | `12.68 x 10.91 x 3.31 inches` |
+| `weight` | String | `14.25 ounces` |
+| `date_first_available` | String | `August 28, 2025` |
+| `variation_count` | Integer | `118` |
+| `available_dimensions` | Struct | `{size_name: […], color_name: […]}` |
+| `images` | Array\[String\] | `["https://…", …]` |
+| `rating_overview` | Struct | `{5: 76, 4: 13, 3: 6, 2: 2, 1: 3}` |
+| `stock_status` | String | `In Stock` |
+| `buybox_seller` | String | `RUMIA FASHION` |
+| `is_fba` | Boolean | `true` |
+| `marketplace` | String | `US` |
+| `source_extracted_at` | String (ISO-8601) | `2026-03-04T11:21:36.898408` |
+| `ingested_at` | String (date) | `2026-03-04` |
+
+---
+
+## 2. Silver Schema
+
+**Silver asset:** `silver/amazon/product_details`  
+**Path:** `s3a://lakehouse/silver/amazon/product_details`  
+**Format:** Delta Lake, partitioned by `ingested_at`
+
+| Column | Type | Source / Notes |
+|---|---|---|
+| `asin` | String | Identity key |
+| `parent_asin` | String | Parent listing ASIN |
+| `title` | String | Whitespace-trimmed |
+| `brand` | String | Stripped `"Brand: "` prefix |
+| `category_path` | String | Full breadcrumb string |
+| `category_depth` | Integer | `len(categories)` |
+| `category_leaf` | String | Last element of `categories[].name` |
+| `bsr_primary_rank` | Integer | Parsed from `best_seller_rank[0]` |
+| `bsr_primary_category` | String | Category name from `best_seller_rank[0]` |
+| `bsr_secondary_rank` | Integer | Parsed from `best_seller_rank[1]`, nullable |
+| `bsr_secondary_category` | String | Category from `best_seller_rank[1]`, nullable |
+| `dimension_length` | Double | First component of dimensions string |
+| `dimension_width` | Double | Second component |
+| `dimension_height` | Double | Third component |
+| `dimension_unit` | String | Unit token (e.g. `inches`) |
+| `weight_value` | Double | Numeric part of weight string |
+| `weight_unit` | String | Unit token (e.g. `ounces`) |
+| `date_first_available` | Date | Parsed from `"MMMM d, yyyy"` format |
+| `variation_count` | Integer | Total number of ASIN variations |
+| `size_count` | Integer | `len(available_dimensions.size_name)` |
+| `color_count` | Integer | `len(available_dimensions.color_name)` |
+| `main_image_url` | String | `images[0]` |
+| `image_count` | Integer | `len(images)` |
+| `rating_pct_5` | Double | % of 5-star ratings |
+| `rating_pct_4` | Double | % of 4-star ratings |
+| `rating_pct_3` | Double | % of 3-star ratings |
+| `rating_pct_2` | Double | % of 2-star ratings |
+| `rating_pct_1` | Double | % of 1-star ratings |
+| `rating_weighted_avg` | Double | `Σ(star × pct) / Σ(pct)`, rounded to 2dp |
+| `in_stock` | Boolean | `stock_status.lower() == "in stock"` |
+| `buybox_seller` | String | Current Buy Box owner |
+| `is_fba` | Boolean | Fulfilled by Amazon flag |
+| `marketplace` | String | e.g. `US` |
+| `source_extracted_at` | Timestamp | When the scraper ran |
+| `ingested_at` | Date | Dagster partition key |
+| `silver_processed_at` | Timestamp | When this silver write ran |
+
+---
+
+## 3. Transformation Logic
+
+### 3.1 Brand Cleaning
+
+```
+"Brand: RUMIA" → "RUMIA"
+```
+Regex: strip `^Brand:\s*` and trim.
+
+### 3.2 Best Seller Rank (BSR)
+
+```
+"#364 in Clothing, Shoes & Jewelry"   → bsr_primary_rank=364, bsr_primary_category="Clothing, Shoes & Jewelry"
+"#1 inWomen's Fashion Sweatshirts"    → bsr_secondary_rank=1, bsr_secondary_category="Women's Fashion Sweatshirts"
+```
+Regex handles both spaced and unspaced `"in"` (a known scraper typo).
+
+### 3.3 Dimensions
+
+```
+"12.68 x 10.91 x 3.31 inches" → dimension_length=12.68, dimension_width=10.91, dimension_height=3.31, dimension_unit="inches"
+```
+
+### 3.4 Weight
+
+```
+"14.25 ounces" → weight_value=14.25, weight_unit="ounces"
+```
+
+### 3.5 Rating Overview (Weighted Average)
+
+`rating_overview` struct contains the **percentage share** for each star rating (values sum to ~100).
+
+$$\text{rating\_weighted\_avg} = \frac{\sum_{i=1}^{5} i \times \text{pct}_i}{\sum_{i=1}^{5} \text{pct}_i}$$
+
+Example:
+```
+{5: 76, 4: 13, 3: 6, 2: 2, 1: 3}
+→ (5×76 + 4×13 + 3×6 + 2×2 + 1×3) / 100 = 457/100 = 4.57
+```
+
+### 3.6 Deduplication
+
+Window: `PARTITION BY (asin, ingested_at) ORDER BY source_extracted_at DESC`  
+Keep `row_number = 1` — latest scrape snapshot per product per day.
+
+---
+
+## 4. Update Strategy
+
+Identical to `amazon_search_results`:
+
+- **Write mode:** `overwrite` with `replaceWhere = "ingested_at = '<date>'"` 
+- **Effect:** Only the current day's partition is rewritten; all other partitions are untouched.
+- **Idempotent:** Re-running the same partition produces an identical result.
+
+---
+
+## 5. Folder Structure
+
+```
+elt_pipeline/
+└── assets/
+    ├── bronze.py                      # Bronze assets (Polars + delta-rs)
+    ├── silver.py                      # Placeholder — superseded by silver/ package
+    └── silver/                        # Silver layer package
+        ├── __init__.py                # Re-exports all silver assets
+        ├── search_results.py          # silver/amazon/search_results asset
+        └── product_details.py         # silver/amazon/product_details asset
+```
+
+Adding a new silver asset: create a new module under `silver/` and re-export it in `silver/__init__.py`.
+
