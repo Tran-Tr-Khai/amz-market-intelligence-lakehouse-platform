@@ -7,4 +7,4 @@ minio_data/
 __pycache__/
 spark/
 amazon_scraper.log
-.tmp_dagster_home_f221_3x4
+.tmp_dagster_home__1t8wyty/
